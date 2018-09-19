@@ -1,0 +1,57 @@
+## let's start by trying to get some of Richard Cronn's needle
+## data from NCBI/SRA
+
+## following examples from:
+https://github.com/ncbi/sra-tools/wiki/Download-On-Demand
+
+## many but not all runs listed at:
+https://www.ncbi.nlm.nih.gov/Traces/study/?acc=SRP018395
+
+## just starting with one:
+
+## SRA has its own set of command line tools. 
+
+prefetch SRR669789
+## while we're at it....
+prefetch SRR669871  
+prefetch SRR669834  
+
+## where are these going? 
+
+srapath SRR669834  
+
+## how do we get all of the runs or samples associated
+## with a project?
+
+tar -xzf edirect.tar.gz
+
+#################
+
+## okay, but what if need genbank gene acessions, not the 
+## read libraries?
+
+esearch -db protein -query "lycopene cyclase" | efetch -format fasta
+
+esearch -db protein -query "lycopene cyclase" | efetch -format full -mode json
+
+
+esearch -db  -query "lignin peroxidase [nt] fungi [ORGN] NOT bacteria [ORGN] " | efetch -format full -mode json
+
+esearch -db nucleotide -query "lignin peroxidase" -spell -field DEFINITION
+
+## plan: 
+
+## check size of Cronn project, see if we have room on this computer to download all. 
+##  if not, just grab a couple more to train methods
+## get mRNA sequences for them all:
+
+cutinase[All Fields] AND (fungi[filter] AND biomol_mrna[PROP])
+
+
+## how can we do this with entrez?
+
+## and tonight?
+
+
+
+
