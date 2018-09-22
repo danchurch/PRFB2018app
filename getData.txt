@@ -12,6 +12,7 @@ https://www.ncbi.nlm.nih.gov/Traces/study/?acc=SRP018395
 ## SRA has its own set of command line tools. 
 
 prefetch SRR669789
+
 ## while we're at it....
 prefetch SRR669871  
 prefetch SRR669834  
@@ -19,6 +20,9 @@ prefetch SRR669834
 ## where are these going? 
 
 srapath SRR669834  
+"/home/daniel/ncbi/public/sra/"
+
+## these are not 
 
 ## how do we get all of the runs or samples associated
 ## with a project?
@@ -32,7 +36,7 @@ tar -xzf edirect.tar.gz
 
 esearch -db protein -query "lycopene cyclase" | efetch -format fasta
 
-esearch -db protein -query "lycopene cyclase" | efetch -format full -mode json
+esearch -db nucleotide -query "lycopene cyclase [prot] fungi [ORGN]" | efetch -format full -mode json |& tee "lycopene.json"
 
 
 esearch -db  -query "lignin peroxidase [nt] fungi [ORGN] NOT bacteria [ORGN] " | efetch -format full -mode json
@@ -50,8 +54,28 @@ cutinase[All Fields] AND (fungi[filter] AND biomol_mrna[PROP])
 
 ## how can we do this with entrez?
 
-## and tonight?
+## figure out how to query keywords and limit to fungi.
 
+## get list of terms of interest. 
+
+## can we take top, best hits?
+
+
+## ugh. Another night and nothing to show for it. 
+
+## Okay, we need to show the case for two ideas:
+
+## 1 - there are fungal reads in these studies. 
+
+## 2 - there are correlated, potentially ecologically meaningful 
+##     changes in the fungal-origin and host RNA. 
+
+## so - for #1, get . Set up the runinfo, do the following:
+
+## download a sample
+## blast it for the set of fungal indicators
+## collect counts and run metadata
+## delete r
 
 
 
