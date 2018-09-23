@@ -77,5 +77,79 @@ cutinase[All Fields] AND (fungi[filter] AND biomol_mrna[PROP])
 ## collect counts and run metadata
 ## delete r
 
+## let's tool around in talapas for a bit:
+
+## get an interactive session in talapas
+
+srun --pty bash
+
+## our storage is at:
+
+cd /projects/xylaria/dthomas
+
+## we need to get a list of all the projects/samples
+## of Dougfir from SRA:
+
+## there are two projects I'm interested in:
+
+
+
+## to get a list of this project
+
+aa='PRJNA188506' 
+
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=$aa' -O - 
+
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$aa -O SraRunInfo2.csv
+
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA188506' -O - 
+
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA188506' -O - | tee SraRunInfo.csv
+
+## once entrez are place, can also do this:
+
+esearch -db sra -query PRJNA40075  | efetch --format runinfo | cut -d ',' -f 1 
+
+
+## okay, so once you have this, how do you get the files?
+
+## I think we just want the first column:
+
+bb=$(cut -d ',' -f 1  SraRunInfo.csv)
+
+for i in ${bb}; do 
+echo $i
+done
+
+## taking just the last one, can we download the sample using this value?
+
+## can we get sra tools work locally on talapas?
+wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-centos_linux64.tar.gz
+ln -s /projects/xylaria/dthomas/sratoolkit/bin/prefetch /projects/xylaria/dthomas/prefetch
+ln -s /projects/xylaria/dthomas/sratoolkit/bin/fastq-dump /projects/xylaria/dthomas/fastq-dump
+
+## anyway, can get the raw reads from one SRA run ID?
+
+./fastq-dump -Z $i > $i.fastq
+
+## seems to be working...
+
+## now to blast it for sequences of interest?
+
+makeblastdb -in $i.fastq -parse_seqids -dbtype nucl
+
+blastn –db $i.fastq –query nt.fsa –out $i.out
+
+
+## after getting the results, cleanup:
+## rm $i.fastq 
+
+## accidentally put the fastq at:
+ls -l /projects/xylaria/dthomas/sratoolkit/bin/SRR669871.fastq
+
+## we need some genes:
+
+
+
 
 
