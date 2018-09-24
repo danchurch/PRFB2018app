@@ -87,6 +87,10 @@ srun --pty bash
 
 cd /projects/xylaria/dthomas
 
+## modules
+module load blast
+module load bbmap
+
 ## we need to get a list of all the projects/samples
 ## of Dougfir from SRA:
 
@@ -134,9 +138,14 @@ ln -s /projects/xylaria/dthomas/sratoolkit/bin/fastq-dump /projects/xylaria/dtho
 
 ## seems to be working...
 
+## got to convert to fasta - best utility for this?
+## I remember bbmap was good...
+
+reformat.sh in=$i.fastq out=$i.fasta
+
 ## now to blast it for sequences of interest?
 
-makeblastdb -in $i.fastq -parse_seqids -dbtype nucl
+makeblastdb -in $i.fasta -parse_seqids -dbtype nucl &
 
 blastn –db $i.fastq –query nt.fsa –out $i.out
 
@@ -149,7 +158,26 @@ ls -l /projects/xylaria/dthomas/sratoolkit/bin/SRR669871.fastq
 
 ## we need some genes:
 
+## how to build a fasta with what we need?
 
+
+## ergosterol:
+
+erg6p
+erg2p
+erg5p
+erg4p
+
+
+## fungal chitan synthase
+
+## this is my search:
+## https://www.ncbi.nlm.nih.gov/nuccore?term=CHS%5BAll%20Fields%5D%20OR%20chitin%20synthase%5BAll%20Fields%5D%20AND%20%28fungi%5Bfilter%5D%20AND%20biomol_mrna%5BPROP%5D%29&cmd=DetailsSearch
+
+## 
+
+
+## anthocyanins
 
 
 
