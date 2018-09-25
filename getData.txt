@@ -94,26 +94,31 @@ module load bbmap
 ## we need to get a list of all the projects/samples
 ## of Dougfir from SRA:
 
-## there are two projects I'm interested in:
+## there are three projects I'm interested in from the Cronn folks:
+
+PRJNA263611
+PRJNA188506
+PRJNA243096
+
+## and one project from the EPA:
+
+PRJNA421903
 
 
+## to get a list of runs/samples from this project
 
-## to get a list of this project
+proj='PRJNA188506' 
 
-aa='PRJNA188506' 
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=$proj' -O - 
 
-wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=$aa' -O - 
-
-wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$aa -O SraRunInfo2.csv
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$proj -O SraRunInfo2.csv
 
 wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA188506' -O - 
 
 wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA188506' -O - | tee SraRunInfo.csv
 
 ## once entrez are place, can also do this:
-
 esearch -db sra -query PRJNA40075  | efetch --format runinfo | cut -d ',' -f 1 
-
 
 ## okay, so once you have this, how do you get the files?
 
@@ -147,7 +152,6 @@ reformat.sh in=$i.fastq out=$i.fasta
 
 makeblastdb -in $i.fasta -parse_seqids -dbtype nucl &
 
-blastn –db $i.fastq –query nt.fsa –out $i.out
 
 
 ## after getting the results, cleanup:
@@ -163,21 +167,51 @@ ls -l /projects/xylaria/dthomas/sratoolkit/bin/SRR669871.fastq
 
 ## ergosterol:
 
-erg6p
-erg2p
-erg5p
-erg4p
+## we want everything after lanosterol for the 
+## ergosterol pathway, I guess. Our genbank
+## search terms:
+
+## Ergosterol[Title] AND (fungi[filter] AND biomol_mrna[PROP])
+
+
 
 
 ## fungal chitan synthase
 
 ## this is my search:
-## https://www.ncbi.nlm.nih.gov/nuccore?term=CHS%5BAll%20Fields%5D%20OR%20chitin%20synthase%5BAll%20Fields%5D%20AND%20%28fungi%5Bfilter%5D%20AND%20biomol_mrna%5BPROP%5D%29&cmd=DetailsSearch
+## chitin synthase[Title] AND (fungi[filter] AND biomol_mrna[PROP])
+## then I kept the top 195 records
 
-## 
+## from home comp:
+scp chitin_synthase_search_Genbank.fasta dthomas@talapas-ln1.uoregon.edu:/projects/xylaria/dthomas 
+
+scp Ergosterol_search_Genbank.fasta dthomas@talapas-ln1.uoregon.edu:/projects/xylaria/dthomas 
+
+## do a search with these?
+
+blastn -db $i.fasta -query chitinase_search_Genbank.fasta -out $i.chs.out
+
+## nada. is it because the queries are so long? Make a small one:
+
+blastn -db $i.fasta -query test.fasta -out test.chs.out
+
+## nope. Hmm. Well, this may in fact be a bad idea...
+
+## anyway, let's take this to it's logical end. Tonight:
+## 1 - compile full fasta of genes to look for, ergosterols and chitin synthases
+## 2 - figure out a good blast output format to score hits, if any, quickly
+## 3 - write script to loop through one project
+## 4 - apply this to all 4 projects
+
+## and talapas is down... fuck. This has been a difficult grant application
+## to write...
+
+## new plan - start on manuscript edits. Maybe the text for the grant
+
+## hit the ground running on this weekend. By then I should have access to 
+## either wm or uo cluster or both. 
 
 
-## anthocyanins
 
 
 
