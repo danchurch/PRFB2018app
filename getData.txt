@@ -95,30 +95,17 @@ module load bbmap
 ## of Dougfir from SRA:
 
 ## there are three projects I'm interested in from the Cronn folks:
-
 PRJNA263611
 PRJNA188506
 PRJNA243096
-
 ## and one project from the EPA:
-
 PRJNA421903
 
 
 ## to get a list of runs/samples from this project
 
 proj='PRJNA188506' 
-
-wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=$proj' -O - 
-
 wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$proj -O SraRunInfo2.csv
-
-wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA188506' -O - 
-
-wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA188506' -O - | tee SraRunInfo.csv
-
-## once entrez are place, can also do this:
-esearch -db sra -query PRJNA40075  | efetch --format runinfo | cut -d ',' -f 1 
 
 ## okay, so once you have this, how do you get the files?
 
@@ -211,7 +198,140 @@ blastn -db $i.fasta -query test.fasta -out test.chs.out
 ## hit the ground running on this weekend. By then I should have access to 
 ## either wm or uo cluster or both. 
 
+## but I need to know that I'm not crazy here, that this is isn't a waste 
+## of time. 
+
+## let's use the lab computer till talapas is back online. 
+
+## two projects - the above involves checking the entire read set for the 
+## presence of a set of fungal-specific reads. The other half of my 
+## preliminary data idea was to simply get an idea of how many reads are 
+## thrown out from an RNAseq study wsimply due to not aligning to the 
+## ref genome or transcriptome. 
+
+## these are complimentary. One iteration of the loop should look this:
+
+## download a run or sample
+## align it 
+## discard reads that align
+## note amount of non-aligned reads
+## blast the remaining sample with the selected sequences from ergosterol and chitin synthase
+
+## get the Dougfir genome:
+
+cd /home/daniel/Documents/genomes/Pseudotsuga
+
+wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/001/517/045/GCA_001517045.1_DougFir1.0/GCA_001517045.1_DougFir1.0_genomic.fna.gz
+
+tar -xzf GCA_001517045.1_DougFir1.0_genomic.fna.gz
+
+## that's going to take forever. But what are we going to do with it when it's done?
+
+## make an index file for  hisat:
+hisatDir=/home/daniel/hisat2-2.1.0
+
+$hisatDir/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougFirGen
+
+##########################
+#!usr/bin/env bash
+hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougFirGen
+
+## get list of runs for the first project
+proj='PRJNA188506' 
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$proj -O SraRunInfo.csv
+
+## make an array of run names:
+bb=$(cut -d ',' -f 1  <(sed '1,1 d' SraRunInfo.csv ))
+
+## get the fastq
+
+for i in $bb; do
+echo $i
+    ## get fastq
+    ./fastq-dump -Z $i > $i.fastq
+    ## do the alignment
+    sa=${i/\.fastq/\.sam}
+    $hisatDir/hisat2 -x mllGen -U $i -S $sa 
+    ## convert to BAM
+    ba=${i/\.sam/\.bam}
+    samtools view -bS $sa > $ba
+    ## or convert to fasta?
+    clean up 
+    rm $sa
+    rm $i
+    ## we need to count lines here
+done
 
 
+$hisatDir/hisat2
+
+## 
+
+reformat.sh in=$i.fastq out=$i.fasta
+makeblastdb -in $i.fasta -parse_seqids -dbtype nucl &
+
+
+## setup scp for dougfir genome:
+
+scp GCA_001517045.1_DougFir1.0_genomic.fna.gz dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas
+
+## get hisat
+
+wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip
+
+## can we get a job going to build the hisat index?
+
+hisat2-2.1.0/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougfir
+
+#!/bin/bash
+#SBATCH --partition=short        ### Partition (like a queue in PBS)
+#SBATCH --job-name=build_dougfir_index
+#SBATCH --output=build.log         ### File in which to store job output
+#SBATCH --error=build.err          ### File in which to store job error messages
+#SBATCH --time=0-04:01:00       ### Wall clock time limit in Days-HH:MM:SS
+#SBATCH --nodes=1               ### Number of nodes needed for the job
+#SBATCH --ntasks-per-node=1     ### Number of tasks to be launched per Node
+
+hisat2-2.1.0/hisat2-build Mimulus_luteus.fasta mllGen
+
+scp hisatbuild.sh dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas
+
+## we're going to do two large loops, (1) through all the samples in a project, 
+## for (2) all projects 
+
+## so let's run through one sample from one project:
+
+#!/bin/bash
+#SBATCH --partition=short        ### Partition (like a queue in PBS)
+#SBATCH --job-name=build_dougfir_index
+#SBATCH --output=build.log         ### File in which to store job output
+#SBATCH --error=build.err          ### File in which to store job error messages
+#SBATCH --time=0-23:00:00       ### Wall clock time limit in Days-HH:MM:SS
+#SBATCH --nodes=1               ### Number of nodes needed for the job
+#SBATCH --ntasks-per-node=1     ### Number of tasks to be launched per Node
+
+proj='PRJNA188506' 
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$proj -O SraRunInfo.csv
+
+module load samtools
+
+bb=$(cut -d ',' -f 1  <(sed '1,1 d' SraRunInfo.csv ))
+
+for i in ${bb[@]}; do 
+echo $i
+    ./fastq-dump -Z $i > $i.fastq
+    hisat2-2.1.0/hisat2 -x dougfir -U $i.fastq -S $i.sam | tee -a align.log
+    samtools view -f u $i.sam > $i_notMapped.sam
+    samtools view -Sb $i_notMapped.sam $i_notMapped.bam
+done
+
+## let's just see if doing this on project works, and how much da
+
+############################################################
+
+aa=('PRJNA263611' 'PRJNA188506' 'PRJNA243096' 'PRJNA421903')
+for j in ${aa[@]}; do
+echo $j
+done
 
 
