@@ -237,10 +237,12 @@ $hisatDir/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougFirGen
 hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougFirGen
 
 ## get list of runs for the first project
+
 proj='PRJNA188506' 
 wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$proj -O SraRunInfo.csv
 
 ## make an array of run names:
+
 bb=$(cut -d ',' -f 1  <(sed '1,1 d' SraRunInfo.csv ))
 
 ## get the fastq
@@ -281,7 +283,6 @@ wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_
 
 ## can we get a job going to build the hisat index?
 
-hisat2-2.1.0/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougfir
 
 #!/bin/bash
 #SBATCH --partition=short        ### Partition (like a queue in PBS)
@@ -292,7 +293,8 @@ hisat2-2.1.0/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougfir
 #SBATCH --nodes=1               ### Number of nodes needed for the job
 #SBATCH --ntasks-per-node=1     ### Number of tasks to be launched per Node
 
-hisat2-2.1.0/hisat2-build Mimulus_luteus.fasta mllGen
+hisat2-2.1.0/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougfir
+
 
 scp hisatbuild.sh dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas
 
@@ -315,7 +317,30 @@ wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runin
 
 module load samtools
 
-bb=$(cut -d ',' -f 1  <(sed '1,1 d' SraRunInfo.csv ))
+bb=($(cut -d ',' -f 1  <(sed '1,1 d' SraRunInfo.csv )))
+
+for i in ${bb[@]}; do
+echo $i
+done
+
+######### try a run #######
+
+i=${bb[0]}
+
+echo $i
+
+./fastq-dump -Z $i > $i.fastq
+
+hisat2-2.1.0/hisat2 -x dougfir -U $i.fastq -S $i.sam | tee -a align.log
+
+## not entered below
+
+samtools view -f u $i.sam > $i_notMapped.sam
+
+samtools view -Sb $i_notMapped.sam $i_notMapped.bam
+
+
+
 
 for i in ${bb[@]}; do 
 echo $i
