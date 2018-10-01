@@ -283,7 +283,6 @@ wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_
 
 ## can we get a job going to build the hisat index?
 
-
 #!/bin/bash
 #SBATCH --partition=short        ### Partition (like a queue in PBS)
 #SBATCH --job-name=build_dougfir_index
@@ -295,7 +294,6 @@ wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_
 
 hisat2-2.1.0/hisat2-build GCA_001517045.1_DougFir1.0_genomic.fna dougfir
 
-
 scp hisatbuild.sh dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas
 
 ## we're going to do two large loops, (1) through all the samples in a project, 
@@ -303,6 +301,18 @@ scp hisatbuild.sh dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas
 
 ## so let's run through one sample from one project:
 
+
+project='PRJNA188506' 
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$project -O $project".csv"
+
+module load samtools
+
+
+for i in ${bb[@]}; do
+echo $i
+done
+
+######### 
 #!/bin/bash
 #SBATCH --partition=short        ### Partition (like a queue in PBS)
 #SBATCH --job-name=build_dougfir_index
@@ -311,46 +321,29 @@ scp hisatbuild.sh dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas
 #SBATCH --time=0-23:00:00       ### Wall clock time limit in Days-HH:MM:SS
 #SBATCH --nodes=1               ### Number of nodes needed for the job
 #SBATCH --ntasks-per-node=1     ### Number of tasks to be launched per Node
-
-proj='PRJNA188506' 
-wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$proj -O SraRunInfo.csv
+#SBATCH --memory=64G
 
 module load samtools
+module load bbmap
+cd /projects/xylaria/dthomas
 
-bb=($(cut -d ',' -f 1  <(sed '1,1 d' SraRunInfo.csv )))
+project='PRJNA188506' 
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term='$project -O $project".csv"
+bb=($(cut -d ',' -f 1  <(sed '1,1 d' $project".csv" )))
 
 for i in ${bb[@]}; do
-echo $i
-done
-
-######### try a run #######
-
-i=${bb[0]}
-
-echo $i
-
-./fastq-dump -Z $i > $i.fastq
-
-hisat2-2.1.0/hisat2 -x dougfir -U $i.fastq -S $i.sam | tee -a align.log
-
-## not entered below
-
-samtools view -f u $i.sam > $i_notMapped.sam
-
-samtools view -Sb $i_notMapped.sam $i_notMapped.bam
-
-
-
-
-for i in ${bb[@]}; do 
-echo $i
+    echo $i
     ./fastq-dump -Z $i > $i.fastq
-    hisat2-2.1.0/hisat2 -x dougfir -U $i.fastq -S $i.sam | tee -a align.log
-    samtools view -f u $i.sam > $i_notMapped.sam
-    samtools view -Sb $i_notMapped.sam $i_notMapped.bam
+    hisat2-2.1.0/hisat2 -x dougfir -U $i.fastq -S $i.sam 
+    rm $i.fastq
+    samtools view -f 4 -b $i.sam > $i"_notMapped.bam"
+    rm $i.sam
+    ## save this for later, keeps failing:
+    #reformat.sh in=$i"_notMapped.bam" out=$i"_notMapped.fastq"
 done
 
-## let's just see if doing this on project works, and how much da
+## cleanup:
+#find . -type f -newer notMatch.sh -exec "rm" {} \;
 
 ############################################################
 
@@ -358,5 +351,14 @@ aa=('PRJNA263611' 'PRJNA188506' 'PRJNA243096' 'PRJNA421903')
 for j in ${aa[@]}; do
 echo $j
 done
+
+## now what? 
+
+## we should take our fastq file of unmatched reads, and blast 
+## them against known fungal genes. 
+
+## which genes?
+
+
 
 
