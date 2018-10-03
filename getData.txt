@@ -359,6 +359,151 @@ done
 
 ## which genes?
 
+## tonight - get downloads needed for pollution experiment, and one or two budbreak
 
+## but let's get the pollution downloads started. We don't need them all, just a few,
+## so make a list on genbank and start the pipeline.
+
+## then write a script to get the bam -> fastq conversions? See if we have 
+## room...
+
+bb=($(cut -d ',' -f 1  <(sed '1,1 d' dougFirPollutionRuns.txt)))
+
+head -n 2 dougFirPollutionRuns.txt 
+
+head -n 2 dougFirPollutionRuns.txt | cut  -f 5
+
+echo $(sed '1,1 r' dougFirPollutionRuns.txt)
+
+bb=($(cut -f 5  <(sed '1,1 d' dougFirPollutionRuns.txt)))
+for i in ${bb[@]}; do 
+echo $i
+done
+
+## tomorrow, convert files to fastq. 
+## look for an automated way to blast them 
+## against fungi (check paper)
+
+
+####################
+
+## let's try one manual blast, see how long this takes:
+
+## on talapas, convert to fastq:
+
+cd /projects/xylaria/dthomas/budbreak
+
+module load samtools
+module load bbmap
+
+reformat.sh in=SRR669812_notMapped.bam out=SRR669812_notMapped.fa
+
+
+scp dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas/budbreak/SRR669812_notMapped.fa .
+
+## for our fungal RNA database from genbank:
+"Fungi"[Organism] AND (fungi[filter] AND biomol_mrna[PROP] AND ddbj_embl_genbank[filter])
+
+## gives us ~200,000 sequences to make a blastn database...
+
+## for our bacterial database, autogenerate from the genbank site:
+
+(("Bacteria"[Organism] OR "Bacteria Latreille et al. 1825"[Organism]) OR ("Bacteria"[Organism] OR "Bacteria Latreille et al. 1825"[Organism] OR bacteria[All Fields])) AND (biomol_mrna[PROP] AND ddbj_embl_genbank[filter]) AND (bacteria[filter] AND biomol_mrna[PROP])
+
+## for archea, let's wait...
+
+## get our fungal and bacterial RNA fastas onto talapas:
+
+scp fungal_rna.txt dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas/
+
+scp bacterial_rna.txt dthomas@talapas-login.uoregon.edu:/projects/xylaria/dthomas/
+
+## make blast databases
+
+## interactive
+srun --pty bash
+
+module load blast
+module load samtools
+module load bbmap
+
+## fungal db
+cd /projects/xylaria/dthomas/fungal_RNA_blastdb
+makeblastdb -in fungal_rna.fa -dbtype nucl 
+## so our fungal database is at:
+fdb=/projects/xylaria/dthomas/fungal_RNA_blastdb/fungal_rna.fa
+
+## bacterial db
+cd /projects/xylaria/dthomas/bacterial_RNA_blastdb
+makeblastdb -in bacterial_rna.fa -dbtype nucl 
+## our bacterial database is at:
+bdb=/projects/xylaria/dthomas/bacterial_RNA_blastdb/bacterial_rna.fa
+
+## for some reason, both of these have ~10,000 sequences in them. 
+## I thought there were more in the request...
+
+## how does converting one of our bams to fasta, then blasting work?
+
+cd budbreak/
+
+i="SRR669812_notMapped.bam"
+
+echo ${i/.bam/.fa}
+
+reformat.sh in=$i out=${i/.bam/.fa}
+
+## sure how this works, since I can't edit the path for blast...
+## put the db and query in the same folder?
+
+cp /projects/xylaria/dthomas/fungal_RNA_blastdb/* ./
+
+
+## run blast:
+
+
+time blastn -db $fdb -query ${i/.bam/.fa} -outfmt "6 pident qlen" -out test.out
+time blastn -db $bdb -query ${i/.bam/.fa} -outfmt "6 pident qlen" -out test.out
+
+## that will for now, we can count the lines to get a raw estimate of fungal and bacterial 
+## reads. 
+
+echo ${i/.bam/.fa}
+
+echo ${i/.bam/_fungi.out}
+
+echo ${i/.bam/_bact.out}
+
+## how do we script this? 
+
+
+## lookForMicrobes.sh
+##################################
+#!/bin/bash
+#SBATCH --job-name=lookForMicrobes
+#SBATCH --output=lookForMicrobes.log         ### File in which to store job output
+#SBATCH --error=lookForMicrobes.err          ### File in which to store job error messages
+#SBATCH --time=1-00:00:00       ### Wall clock time limit in Days-HH:MM:SS
+#SBATCH --nodes=1               ### Number of nodes needed for the job
+#SBATCH --ntasks-per-node=1     ### Number of tasks to be launched per Node
+#SBATCH --mem=64G
+
+module load blast
+module load samtools
+module load bbmap
+
+cd /projects/xylaria/dthomas/pollution
+#cd /projects/xylaria/dthomas/budbreak
+
+for i in *; do 
+	echo $i
+	reformat.sh in=$i out=${i/.bam/.fa}
+	time blastn -db $fdb -query ${i/.bam/.fa} -outfmt "6 pident qlen" -out ${i/.bam/_fungi.out}
+	time blastn -db $bdb -query ${i/.bam/.fa} -outfmt "6 pident qlen" -out ${i/.bam/_bact.out}
+	rm ${i/.bam/.fa}
+done
+
+
+## side note, found this for remote blasts. Still works?
+## $ blastn –db nt –query nt.u00001 –out test.out -remote
 
 
