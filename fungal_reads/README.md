@@ -1,2 +1,1 @@
-This is the preliminary bioinformatics to look for fungal reads in the doug fir transcriptome, and my accompanying application materials for the PRFB 2018.
-
+This is the preliminary bioinformatics to look for fungal reads in the doug fir transcriptome, and my accompanying application materials for the PRFB 2018. This was done to test the idea that important information about metabolic activity of the microbiome is present in the body of reads that are normally discarded in host-centered studies. 
